@@ -3,3 +3,83 @@
 @import "@alpic-ai/ui/theme";
 
 @source "../node_modules/@alpic-ai/ui/dist";
+
+/* ─── Ski-edition extreme emoji animations ───────────────────────────── */
+
+@keyframes snow-fall {
+  0% {
+    transform: translateY(-20%) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  90% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(120%) translateX(14px);
+    opacity: 0;
+  }
+}
+
+@keyframes wobble-tree {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes orbit {
+  0% {
+    transform: rotate(0deg) translateX(28px) rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg) translateX(28px) rotate(-360deg);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-snow-fall {
+  animation: snow-fall 7s linear infinite;
+}
+
+.animate-wobble-tree {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: wobble-tree 3.2s ease-in-out infinite;
+}
+
+.animate-orbit {
+  animation: orbit 2.4s linear infinite;
+}
+
+.animate-drift {
+  animation: drift 2.4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 1.6s ease-in-out infinite;
+}

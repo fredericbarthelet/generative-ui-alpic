@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useBoundProp, useStateBinding } from "@json-render/react";
 
 /**
- * 🎿 SKI EDITION — EMOJI-ONLY RENDERER 🎿
+ * 🎿  SKI EDITION — MAXIMALIST EMOJI RENDERER  🎿
  *
- * The catalog (`src/catalog.ski.ts`) still describes ski components in
- * ski-resort vocabulary. The IMPLEMENTATIONS below render those components
- * using nothing but emojis and bare HTML. There are zero @alpic-ai/ui
- * imports here on purpose — the entire visible UI is composed of emoji
- * borders, emoji icons, emoji state indicators and emoji decorations.
+ * Every visible element is built from emojis. Cards are wrapped in alpine
+ * scenes (mountain ceiling, pine forests, animated snowfall). Headings are
+ * crowned with rows of peaks. Body text is sprinkled with snowflakes between
+ * words. Buttons explode with contextual icon walls. Avatars sit inside
+ * snow globes. The catalog (`src/catalog.ski.ts`) is unchanged — only the
+ * renderers are extreme.
  *
- * Pure layout helpers (flex / grid / gap) and basic text sizing are kept
- * because they're invisible — the user only sees emojis and the strings
- * the model passes through props.
+ * No @alpic-ai/ui imports here on purpose: every visible glyph is an emoji.
  */
 
 type Ctx = {
   props: Record<string, any>;
-  children?: React.ReactNode;
+  children?: ReactNode;
   emit: (event: string) => void;
   on: (event: string) => {
     emit: () => void;
@@ -27,22 +26,101 @@ type Ctx = {
   bindings?: Record<string, string>;
 };
 
-// ── Emoji helpers ────────────────────────────────────────────────────────
-const SNOW_LINE = "❄️ ❄️ ❄️ ❄️ ❄️ ❄️ ❄️ ❄️";
-const PINE_LINE = "🌲 🌲 🌲 🌲 🌲 🌲 🌲";
+// ── Emoji building blocks ────────────────────────────────────────────────
+function repeat(glyph: string, n: number): string {
+  return Array.from({ length: n }, () => glyph).join("");
+}
 
-function SnowBorder() {
+function EmojiRow({ glyph, count = 14 }: { glyph: string; count?: number }) {
   return (
-    <div className="text-center select-none leading-none">{SNOW_LINE}</div>
+    <div
+      aria-hidden
+      className="text-center select-none leading-none whitespace-nowrap overflow-hidden"
+    >
+      {repeat(glyph, count)}
+    </div>
   );
 }
 
-function repeat(emoji: string, n: number) {
-  return Array.from({ length: n }, () => emoji).join("");
+function ThickBorder({
+  glyph,
+  rows = 3,
+  count = 14,
+}: {
+  glyph: string;
+  rows?: number;
+  count?: number;
+}) {
+  return (
+    <div aria-hidden className="flex flex-col leading-none">
+      {Array.from({ length: rows }, (_, i) => (
+        <EmojiRow key={i} glyph={glyph} count={count} />
+      ))}
+    </div>
+  );
+}
+
+function PineColumn({ rows = 6 }: { rows?: number }) {
+  return (
+    <div
+      aria-hidden
+      className="flex flex-col items-center justify-around select-none leading-none px-1"
+    >
+      {Array.from({ length: rows }, (_, i) => (
+        <span
+          key={i}
+          className="animate-wobble-tree"
+          style={{ animationDelay: `${(i % 4) * 0.4}s` }}
+        >
+          🌲
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function Snowfall({ flakes = 14 }: { flakes?: number }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden select-none"
+    >
+      {Array.from({ length: flakes }, (_, i) => (
+        <span
+          key={i}
+          className="absolute animate-snow-fall text-sm"
+          style={{
+            left: `${(i * 73) % 100}%`,
+            top: `-10%`,
+            animationDelay: `${(i * 0.6) % 6}s`,
+            animationDuration: `${5 + (i % 5)}s`,
+          }}
+        >
+          ❄️
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Interleave a glyph between every word of a string. */
+function snowdust(text: string, glyph = "❄️"): ReactNode {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return null;
+  return words.flatMap((w, i) =>
+    i === 0
+      ? [<span key={`w${i}`}>{w}</span>]
+      : [
+          <span key={`g${i}`} aria-hidden className="opacity-70 mx-1">
+            {glyph}
+          </span>,
+          <span key={`w${i}`}>{w}</span>,
+        ],
+  );
 }
 
 // ── Mapping tables (ski slang → behaviour) ───────────────────────────────
-const floorPadding: Record<string, string> = {
+const floorWidth: Record<string, string> = {
   studio: "max-w-xs",
   suite: "max-w-md",
   wing: "max-w-xl",
@@ -87,21 +165,21 @@ const gridColsMap: Record<number, string> = {
 };
 
 const prominenceSize: Record<string, string> = {
-  everest: "text-3xl",
-  k2: "text-2xl",
-  matterhorn: "text-xl",
-  denali: "text-base",
+  everest: "text-4xl",
+  k2: "text-3xl",
+  matterhorn: "text-2xl",
+  denali: "text-xl",
 };
-const prominenceMountains: Record<string, number> = {
-  everest: 3,
-  k2: 2,
-  matterhorn: 1,
-  denali: 1,
+const prominencePeaks: Record<string, number> = {
+  everest: 9,
+  k2: 7,
+  matterhorn: 5,
+  denali: 3,
 };
 
 const chatteringSize: Record<string, string> = {
   breath: "text-base",
-  shiver: "text-xl",
+  shiver: "text-2xl",
   lullaby: "text-sm opacity-70",
   frozen: "font-mono text-sm",
   mutter: "text-xs opacity-70",
@@ -109,10 +187,10 @@ const chatteringSize: Record<string, string> = {
 
 const speedSize: Record<string, string> = {
   snowplow: "text-base",
-  wedge: "text-xl",
-  parallel: "text-3xl",
-  carving: "text-5xl",
-  racing: "text-7xl",
+  wedge: "text-2xl",
+  parallel: "text-4xl",
+  carving: "text-6xl",
+  racing: "text-8xl",
 };
 
 const difficultyDot: Record<string, string> = {
@@ -131,10 +209,10 @@ const frostIcon: Record<string, string> = {
 };
 
 const chillSize: Record<string, string> = {
-  shiver: "text-sm",
-  shake: "text-xl",
-  wobble: "text-3xl",
-  spin: "text-5xl",
+  shiver: "text-base",
+  shake: "text-2xl",
+  wobble: "text-4xl",
+  spin: "text-6xl",
 };
 
 const kindToInputType: Record<string, "text" | "email" | "password" | "number"> =
@@ -145,54 +223,73 @@ const kindToInputType: Record<string, "text" | "email" | "password" | "number"> 
     altitude: "number",
   };
 
-const pushEmoji: Record<string, { left: string; right: string }> = {
-  downhill: { left: "⬇️", right: "⬇️" },
-  uphill: { left: "⬆️", right: "⬆️" },
-  drift: { left: "🌊", right: "🌊" },
-  wipeout: { left: "💥", right: "💥" },
-  glide: { left: "✨", right: "✨" },
-  shuffle: { left: "〰️", right: "〰️" },
-  rally: { left: "🎉", right: "🎉" },
+const pushFlair: Record<string, string> = {
+  downhill: "⬇️",
+  uphill: "⬆️",
+  drift: "🌊",
+  wipeout: "💥",
+  glide: "✨",
+  shuffle: "〰️",
+  rally: "🎉",
 };
 
 const reachPadding: Record<string, string> = {
-  regular: "px-3 py-1.5",
-  blade: "px-1.5 py-1",
-  pirouette: "px-2 py-2 rounded-full",
-  "long-stride": "px-6 py-2 rounded-full",
+  regular: "px-4 py-2",
+  blade: "px-2 py-1",
+  pirouette: "px-3 py-3 rounded-full",
+  "long-stride": "px-8 py-2 rounded-full",
 };
 
-// ── Ski components — emoji-only renderers ────────────────────────────────
+// ── Ski components — MAXIMALIST emoji renderers ──────────────────────────
 export const skiComponents = {
-  // 🏨 Card — a chalet framed top and bottom by snowflakes
+  // 🏨 Card — a full chalet scene: mountain ceiling, pine walls, snowfall
   "🏨": ({ props, children }: Ctx) => (
     <div
-      className={`${floorPadding[props.floor ?? "compound"] ?? "w-full"} ${
+      className={`${floorWidth[props.floor ?? "compound"] ?? "w-full"} ${
         props.heated ? "mx-auto" : ""
-      } flex flex-col`}
+      } relative overflow-hidden`}
     >
-      <SnowBorder />
-      <div className="px-2 py-2">
-        {(props.chaletName || props.notice) && (
-          <div className="flex flex-col gap-1 mb-2">
-            {props.chaletName && (
-              <div className="flex items-center gap-2 text-lg">
-                <span>🏨</span>
-                <strong>{props.chaletName}</strong>
+      <ThickBorder glyph="🏔️" rows={2} count={16} />
+      <div className="relative flex">
+        <PineColumn rows={8} />
+        <div className="relative flex-1">
+          <Snowfall flakes={10} />
+          <div className="relative z-10 px-2 py-3 flex flex-col gap-3">
+            {(props.chaletName || props.notice) && (
+              <div className="flex flex-col gap-2">
+                {props.chaletName && (
+                  <div className="flex items-center justify-center gap-2 text-xl">
+                    <span aria-hidden>🏨</span>
+                    <span aria-hidden className="animate-drift">
+                      ⛷️
+                    </span>
+                    <strong className="text-center">
+                      {snowdust(props.chaletName, "🏨")}
+                    </strong>
+                    <span aria-hidden className="animate-drift">
+                      🏂
+                    </span>
+                    <span aria-hidden>🏨</span>
+                  </div>
+                )}
+                {props.notice && (
+                  <div className="text-sm opacity-80 text-center">
+                    {snowdust(props.notice, "❄️")}
+                  </div>
+                )}
+                <EmojiRow glyph="❄️" count={16} />
               </div>
             )}
-            {props.notice && (
-              <div className="text-sm opacity-70 pl-7">{props.notice}</div>
-            )}
+            <div className="flex flex-col gap-3">{children}</div>
           </div>
-        )}
-        <div className="flex flex-col gap-2">{children}</div>
+        </div>
+        <PineColumn rows={8} />
       </div>
-      <SnowBorder />
+      <ThickBorder glyph="☃️" rows={2} count={16} />
     </div>
   ),
 
-  // 🎿 Stack — children separated visually by skis
+  // 🎿 Stack — children laid out, separated by skis
   "🎿": ({ props, children }: Ctx) => {
     const direction = runMap[props.run ?? "schuss"] ?? "vertical";
     return (
@@ -226,20 +323,28 @@ export const skiComponents = {
     );
   },
 
-  // ❄️ Separator — a literal line of snowflakes
+  // ❄️ Separator — a thick avalanche of snowflakes
   "❄️": ({ props }: Ctx) =>
     props.axis === "crevasse" ? (
       <div
-        className="flex flex-col text-center select-none leading-none"
         aria-hidden
+        className="flex flex-col items-center justify-around text-center select-none leading-none px-1"
       >
-        {Array.from({ length: 6 }, (_, i) => (
-          <span key={i}>❄️</span>
+        {Array.from({ length: 10 }, (_, i) => (
+          <span
+            key={i}
+            className="animate-shimmer"
+            style={{ animationDelay: `${(i % 5) * 0.2}s` }}
+          >
+            ❄️
+          </span>
         ))}
       </div>
     ) : (
-      <div className="my-2">
-        <SnowBorder />
+      <div className="my-3 flex flex-col gap-0.5">
+        <EmojiRow glyph="❄️" count={18} />
+        <EmojiRow glyph="🌨️" count={14} />
+        <EmojiRow glyph="❄️" count={18} />
       </div>
     ),
 
@@ -260,8 +365,8 @@ export const skiComponents = {
     const setValue = isBound ? setBoundValue : setLocalValue;
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="select-none">🚡</span>
+        <EmojiRow glyph="🚡" count={16} />
+        <div className="flex flex-wrap items-center gap-2 justify-center">
           {cabins.map((cabin) => {
             const active = cabin.station === value;
             return (
@@ -272,19 +377,25 @@ export const skiComponents = {
                   setValue(cabin.station);
                   emit("ride");
                 }}
-                className={`px-2 py-1 text-sm cursor-pointer ${active ? "font-semibold" : "opacity-60"}`}
+                className={`px-3 py-1 text-sm cursor-pointer rounded-md flex items-center gap-2 ${
+                  active
+                    ? "font-semibold border-2 border-double"
+                    : "opacity-60"
+                }`}
               >
-                {active ? "🟢" : "⚪"} {cabin.name}
+                <span aria-hidden>{active ? "🟢🚡🟢" : "⚪🚡⚪"}</span>
+                <span>{cabin.name}</span>
               </button>
             );
           })}
         </div>
+        <EmojiRow glyph="🚠" count={16} />
         <div>{children}</div>
       </div>
     );
   },
 
-  // 🪵 Accordion — stack of logs that open
+  // 🪵 Accordion — stack of logs
   "🪵": ({ props }: Ctx) => {
     const logs: { name: string; rings: string }[] = props.logs ?? [];
     const isMultiple = props.splitting === "rope-team";
@@ -292,10 +403,9 @@ export const skiComponents = {
     const [openMulti, setOpenMulti] = useState<Set<number>>(new Set());
     return (
       <div className="flex flex-col gap-1">
+        <EmojiRow glyph="🪵" count={14} />
         {logs.map((log, i) => {
-          const isOpen = isMultiple
-            ? openMulti.has(i)
-            : openIndex === i;
+          const isOpen = isMultiple ? openMulti.has(i) : openIndex === i;
           return (
             <div key={i}>
               <button
@@ -312,21 +422,25 @@ export const skiComponents = {
                   }
                 }}
               >
-                <span>🪵</span>
+                <span aria-hidden>🪵🪵🪵</span>
                 <strong className="flex-1">{log.name}</strong>
-                <span>{isOpen ? "🔽" : "▶️"}</span>
+                <span aria-hidden>{isOpen ? "🔽" : "▶️"}</span>
               </button>
               {isOpen && (
-                <div className="pl-7 pb-2 text-sm">{log.rings}</div>
+                <div className="pl-9 pb-2 text-sm">
+                  <span aria-hidden>🔥 </span>
+                  {log.rings}
+                </div>
               )}
             </div>
           );
         })}
+        <EmojiRow glyph="🪵" count={14} />
       </div>
     );
   },
 
-  // 🌨️ Dialog — whiteout modal
+  // 🌨️ Dialog — whiteout takeover with falling snow
   "🌨️": ({ props, children }: Ctx) => {
     const [open, setOpen] = useStateBinding<boolean>(props.visibility ?? "");
     const ref = useRef<HTMLDialogElement | null>(null);
@@ -340,20 +454,27 @@ export const skiComponents = {
       <dialog
         ref={ref}
         onClose={() => setOpen(false)}
-        className="backdrop:bg-black/30 p-0 rounded-md max-w-md"
+        className="backdrop:bg-black/30 p-0 rounded-md max-w-lg relative overflow-hidden"
       >
-        <div className="flex flex-col">
-          <div className="text-center select-none leading-none py-1">
-            🌨️🌨️🌨️🌨️🌨️🌨️🌨️🌨️🌨️🌨️
-          </div>
-          <div className="px-4 py-3 flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🌨️</span>
-              <strong>{props.peak}</strong>
+        <ThickBorder glyph="🌨️" rows={3} count={18} />
+        <div className="relative">
+          <Snowfall flakes={16} />
+          <div className="relative z-10 px-5 py-4 flex flex-col gap-3">
+            <div className="flex items-center justify-center gap-2 text-2xl">
+              <span aria-hidden className="animate-drift">
+                🌨️
+              </span>
+              <strong>{snowdust(props.peak, "🌨️")}</strong>
+              <span aria-hidden className="animate-drift">
+                🌨️
+              </span>
             </div>
             {props.forecast && (
-              <div className="text-sm opacity-80">{props.forecast}</div>
+              <div className="text-sm opacity-80 text-center">
+                {snowdust(props.forecast, "❄️")}
+              </div>
             )}
+            <EmojiRow glyph="❄️" count={14} />
             <div className="flex flex-col gap-2">{children}</div>
             <button
               type="button"
@@ -363,108 +484,158 @@ export const skiComponents = {
               ❌ close
             </button>
           </div>
-          <div className="text-center select-none leading-none py-1">
-            🌨️🌨️🌨️🌨️🌨️🌨️🌨️🌨️🌨️🌨️
-          </div>
         </div>
+        <ThickBorder glyph="🌨️" rows={3} count={18} />
       </dialog>
     );
   },
 
-  // 🏔️ Heading — a row of snow-capped peaks before the text
+  // 🏔️ Heading — multiple rows of peaks crowning the inscription
   "🏔️": ({ props }: Ctx) => {
-    const level = props.prominence ?? "k2";
-    const peaks = repeat("🏔️", prominenceMountains[level] ?? 1);
-    const size = prominenceSize[level] ?? "text-2xl";
+    const level: string = props.prominence ?? "k2";
+    const peakCount = prominencePeaks[level] ?? 5;
+    const size = prominenceSize[level] ?? "text-3xl";
     return (
-      <div className={`flex items-center gap-2 ${size} font-bold leading-snug`}>
-        <span aria-hidden>{peaks}</span>
-        <span>{props.inscription}</span>
+      <div className="flex flex-col items-center gap-1">
+        <EmojiRow glyph="🏔️" count={peakCount} />
+        <div
+          className={`${size} font-extrabold tracking-wide text-center leading-tight`}
+        >
+          {snowdust(props.inscription, "🏔️")}
+        </div>
+        <EmojiRow glyph="🏔️" count={peakCount} />
       </div>
     );
   },
 
-  // 🥶 Text — cold-face whisper
+  // 🥶 Text — frosty whisper surrounded by snowflakes
   "🥶": ({ props }: Ctx) => {
     const cls = chatteringSize[props.chattering ?? "breath"] ?? "text-base";
     return (
       <div className={`flex items-start gap-2 ${cls}`}>
-        <span aria-hidden>🥶</span>
-        <span>{props.whisper}</span>
+        <span aria-hidden className="animate-shimmer">
+          🥶
+        </span>
+        <span>{snowdust(props.whisper, "❄️")}</span>
+        <span aria-hidden className="animate-shimmer">
+          🥶
+        </span>
       </div>
     );
   },
 
-  // 🥽 Image — what you'd see through goggles
+  // 🥽 Image — fully fogged goggle viewport
   "🥽": ({ props }: Ctx) => (
-    <div
-      className="flex flex-col items-center justify-center gap-1 select-none border-2 border-dashed rounded-md p-3"
-      style={{
-        width: props.width ?? 160,
-        height: props.height ?? 100,
-        borderColor: "transparent",
-      }}
-    >
-      <div className="text-4xl">🥽</div>
-      <div className="text-xs opacity-70 text-center">{props.vista}</div>
+    <div className="inline-flex flex-col items-center gap-1 select-none">
+      <EmojiRow glyph="🏔️" count={8} />
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: props.width ?? 180,
+          height: props.height ?? 120,
+        }}
+      >
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-6xl leading-none">🥽</div>
+          <div className="text-xs opacity-70 text-center px-2">
+            {snowdust(props.vista ?? "", "❄️")}
+          </div>
+        </div>
+      </div>
+      <EmojiRow glyph="🌲" count={8} />
     </div>
   ),
 
-  // ⛷️ Avatar — a skier at the chosen speed
+  // ⛷️ Avatar — skier inside a snow globe
   "⛷️": ({ props }: Ctx) => {
-    const cls = speedSize[props.speed ?? "parallel"] ?? "text-3xl";
+    const cls = speedSize[props.speed ?? "parallel"] ?? "text-4xl";
     return (
-      <div
-        className="flex items-center gap-2"
-        title={props.skier ? `Skier: ${props.skier}` : undefined}
-      >
-        <span className={`${cls} leading-none`}>⛷️</span>
-        <div className="flex flex-col">
-          <span className="text-xs opacity-70">{props.skier}</span>
+      <div className="inline-flex flex-col items-center gap-1">
+        <EmojiRow glyph="❄️" count={6} />
+        <div className="relative flex items-center justify-center">
+          <span className={`${cls} leading-none animate-drift`}>⛷️</span>
+          <span
+            aria-hidden
+            className="absolute text-base animate-orbit opacity-80"
+            style={{ animationDelay: "0s" }}
+          >
+            ❄️
+          </span>
+          <span
+            aria-hidden
+            className="absolute text-base animate-orbit opacity-80"
+            style={{ animationDelay: "-0.8s" }}
+          >
+            ❄️
+          </span>
+          <span
+            aria-hidden
+            className="absolute text-base animate-orbit opacity-80"
+            style={{ animationDelay: "-1.6s" }}
+          >
+            ❄️
+          </span>
         </div>
+        <EmojiRow glyph="🌲" count={6} />
+        {props.skier && (
+          <span className="text-xs opacity-70">{props.skier}</span>
+        )}
       </div>
     );
   },
 
-  // 🌲 Badge — a pine-tree slope marker with a difficulty dot
+  // 🌲 Badge — pine marker with slope-color dot and tree halo
   "🌲": ({ props }: Ctx) => {
     const dot = difficultyDot[props.difficulty ?? "blue"] ?? "🔵";
     const size = props.size === "fir" ? "text-base" : "text-sm";
     return (
-      <span className={`inline-flex items-center gap-1 ${size}`}>
-        <span aria-hidden>
+      <span
+        className={`inline-flex items-center gap-1 ${size} px-2 py-1 rounded-md`}
+      >
+        <span aria-hidden>🌲🌲</span>
+        <span aria-hidden className="animate-shimmer">
           {dot}
-          🌲
         </span>
         <span>{props.tag}</span>
+        <span aria-hidden className="animate-shimmer">
+          {dot}
+        </span>
+        <span aria-hidden>🌲🌲</span>
       </span>
     );
   },
 
-  // ⛄ Alert — snowman bulletin
+  // ⛄ Alert — snowman bulletin framed by frost icons
   "⛄": ({ props }: Ctx) => {
     const icon = frostIcon[props.frost ?? "fresh"] ?? "❄️";
     return (
-      <div className="flex flex-col gap-1 py-2">
-        <div className="text-center select-none leading-none">{SNOW_LINE}</div>
-        <div className="flex items-start gap-3 px-2">
-          <span className="text-3xl leading-none">
+      <div className="flex flex-col gap-1 py-2 relative overflow-hidden">
+        <EmojiRow glyph={icon} count={14} />
+        <EmojiRow glyph="⛄" count={10} />
+        <div className="flex items-start gap-3 px-3 py-2">
+          <span className="text-4xl leading-none animate-drift">
             {icon}
             ⛄
+            {icon}
           </span>
-          <div className="flex flex-col">
-            <strong>{props.bulletin}</strong>
+          <div className="flex flex-col flex-1">
+            <strong className="text-base">
+              {snowdust(props.bulletin, icon)}
+            </strong>
             {props.melt && (
-              <span className="text-sm opacity-80">{props.melt}</span>
+              <span className="text-sm opacity-90 mt-1">
+                {snowdust(props.melt, "❄️")}
+              </span>
             )}
           </div>
         </div>
-        <div className="text-center select-none leading-none">{SNOW_LINE}</div>
+        <EmojiRow glyph="⛄" count={10} />
+        <EmojiRow glyph={icon} count={14} />
       </div>
     );
   },
 
-  // 🛷 Table — a loaded sled
+  // 🛷 Table — heavy sled-emoji frame, every row prefixed
   "🛷": ({ props }: Ctx) => {
     const cargo: string[] = props.cargo ?? [];
     const payload: string[][] = (props.payload ?? []).map((row: unknown[]) =>
@@ -472,19 +643,24 @@ export const skiComponents = {
     );
     return (
       <div className="flex flex-col gap-1">
+        <EmojiRow glyph="🛷" count={14} />
+        <EmojiRow glyph="🌲" count={14} />
         {props.manifest && (
-          <div className="flex items-center gap-2">
-            <span>🛷</span>
-            <strong>{props.manifest}</strong>
+          <div className="flex items-center justify-center gap-2 py-1">
+            <span aria-hidden>🛷</span>
+            <strong>{snowdust(props.manifest, "🛷")}</strong>
+            <span aria-hidden>🛷</span>
           </div>
         )}
-        <div className="text-center select-none leading-none">{PINE_LINE}</div>
         <table className="text-sm">
           <thead>
             <tr>
               {cargo.map((c, i) => (
-                <th key={c} className="text-left px-2 py-1 font-semibold">
-                  {i === 0 ? "🛷 " : ""}
+                <th
+                  key={c}
+                  className="text-left px-3 py-1 font-semibold border-b border-double"
+                >
+                  <span aria-hidden>{i === 0 ? "🛷 " : "🎿 "}</span>
                   {c}
                 </th>
               ))}
@@ -494,8 +670,8 @@ export const skiComponents = {
             {payload.map((row, i) => (
               <tr key={i}>
                 {row.map((cell, j) => (
-                  <td key={j} className="px-2 py-1">
-                    {j === 0 ? "🎿 " : ""}
+                  <td key={j} className="px-3 py-1">
+                    <span aria-hidden>{j === 0 ? "🎿 " : "❄️ "}</span>
                     {cell}
                   </td>
                 ))}
@@ -503,77 +679,117 @@ export const skiComponents = {
             ))}
           </tbody>
         </table>
-        <div className="text-center select-none leading-none">{PINE_LINE}</div>
+        <EmojiRow glyph="🌲" count={14} />
+        <EmojiRow glyph="🛷" count={14} />
       </div>
     );
   },
 
-  // ☃️ Skeleton — a row of snowmen taking shape
+  // ☃️ Skeleton — multiple pulsing rows of snowmen
   "☃️": ({ props }: Ctx) => {
     const isBall = props.sculpt === "snowball";
     const sample = isBall ? "⚪" : "☃️";
-    const length = Math.max(
-      4,
-      Math.min(
-        20,
-        typeof props.chunkWidth === "string" && props.chunkWidth.endsWith("%")
-          ? 10
-          : 8,
-      ),
-    );
+    const length = 12;
     return (
       <div
-        className="flex items-center gap-1 select-none animate-pulse"
+        className="flex flex-col gap-1 select-none"
         style={{
           width: props.chunkWidth ?? "100%",
           minHeight: props.chunkHeight ?? "1.25rem",
         }}
       >
-        {Array.from({ length }, (_, i) => (
-          <span key={i}>{sample}</span>
+        {Array.from({ length: 3 }, (_, r) => (
+          <div key={r} className="flex items-center gap-1">
+            {Array.from({ length }, (_, i) => (
+              <span
+                key={i}
+                className="animate-shimmer"
+                style={{ animationDelay: `${((i + r * 3) % 8) * 0.15}s` }}
+              >
+                {sample}
+              </span>
+            ))}
+          </div>
         ))}
       </div>
     );
   },
 
-  // 🧊 Spinner — a spinning ice cube
+  // 🧊 Spinner — a halo of orbiting ice cubes
   "🧊": ({ props }: Ctx) => (
-    <div className="flex items-center gap-2">
-      <span
-        className={`inline-block animate-spin leading-none ${
-          chillSize[props.chill ?? "shake"] ?? "text-xl"
-        }`}
-      >
-        🧊
-      </span>
-      {props.label && <span className="text-sm opacity-80">{props.label}</span>}
+    <div className="flex items-center gap-3">
+      <div className="relative w-16 h-16 flex items-center justify-center">
+        <span
+          className={`inline-block animate-spin leading-none ${
+            chillSize[props.chill ?? "shake"] ?? "text-2xl"
+          }`}
+        >
+          🧊
+        </span>
+        <span
+          aria-hidden
+          className="absolute text-sm animate-orbit"
+          style={{ animationDelay: "0s" }}
+        >
+          ❄️
+        </span>
+        <span
+          aria-hidden
+          className="absolute text-sm animate-orbit"
+          style={{ animationDelay: "-0.8s" }}
+        >
+          🧊
+        </span>
+        <span
+          aria-hidden
+          className="absolute text-sm animate-orbit"
+          style={{ animationDelay: "-1.6s" }}
+        >
+          ❄️
+        </span>
+      </div>
+      {props.label && (
+        <span className="text-sm opacity-80">{snowdust(props.label, "❄️")}</span>
+      )}
     </div>
   ),
 
-  // 🧣 Tooltip — scarf whisper, via the native title attribute
+  // 🧣 Tooltip — scarf whisper using the title attribute
   "🧣": ({ props }: Ctx) => (
     <span
       title={props.confide}
-      className="underline decoration-dotted cursor-help text-sm"
+      className="underline decoration-dotted cursor-help text-sm inline-flex items-center gap-1"
     >
-      🧣 {props.whisper}
+      <span aria-hidden className="animate-drift">
+        🧣
+      </span>
+      <span>{props.whisper}</span>
+      <span aria-hidden className="animate-drift">
+        🧣
+      </span>
     </span>
   ),
 
-  // 🔥 Popover — fireplace that lights up on click (HTML <details>)
+  // 🔥 Popover — fireplace using <details>
   "🔥": ({ props }: Ctx) => (
     <details className="inline-block">
-      <summary className="cursor-pointer list-none select-none text-sm">
-        🔥 {props.spark}
+      <summary className="cursor-pointer list-none select-none text-sm inline-flex items-center gap-2">
+        <span aria-hidden className="animate-drift">
+          🔥🔥🔥
+        </span>
+        <span>{props.spark}</span>
+        <span aria-hidden className="animate-drift">
+          🔥🔥🔥
+        </span>
       </summary>
-      <div className="mt-1 pl-5 text-sm opacity-90 border-l-2 border-dashed">
-        <span aria-hidden>🪵 </span>
-        {props.story}
+      <div className="mt-2 pl-5 text-sm opacity-90 border-l-2 border-dashed">
+        <span aria-hidden>🪵🔥 </span>
+        {snowdust(props.story, "🔥")}
       </div>
     </details>
   ),
 
-  // 🌡️ Input — thermometer-decorated input
+  // 🌡️ Input — thermometer column + frost-edged field
   "🌡️": ({ props, bindings, emit }: Ctx) => {
     const [boundValue, setBoundValue] = useBoundProp<string>(
       props.reading,
@@ -587,13 +803,25 @@ export const skiComponents = {
       <label className="flex flex-col gap-1 text-sm">
         {props.dial && (
           <span className="flex items-center gap-2">
-            <span>🌡️</span>
+            <span aria-hidden>🌡️🌡️🌡️</span>
             <strong>{props.dial}</strong>
-            {props.essential && <span title="essential">❗</span>}
+            {props.essential && (
+              <span title="essential" className="animate-shimmer">
+                ❗
+              </span>
+            )}
           </span>
         )}
-        <span className="inline-flex items-center gap-2">
-          <span aria-hidden>📏</span>
+        <span className="inline-flex items-stretch gap-2">
+          <span
+            aria-hidden
+            className="flex flex-col items-center justify-center select-none leading-none"
+          >
+            <span>🌡️</span>
+          </span>
+          <span aria-hidden className="self-center">
+            ❄️
+          </span>
           <input
             id={props.handle ?? undefined}
             name={props.handle ?? undefined}
@@ -606,15 +834,23 @@ export const skiComponents = {
             }}
             onFocus={() => emit("spike")}
             onBlur={() => emit("settle")}
-            className="flex-1 border-b outline-none bg-transparent px-1 py-1"
+            className="flex-1 border-b-2 border-double outline-none bg-transparent px-1 py-1"
           />
+          <span aria-hidden className="self-center">
+            ❄️
+          </span>
         </span>
-        {props.nag && <span className="text-xs opacity-70 pl-6">🌬️ {props.nag}</span>}
+        {props.nag && (
+          <span className="text-xs opacity-70 pl-7">
+            <span aria-hidden>🌬️ </span>
+            {props.nag}
+          </span>
+        )}
       </label>
     );
   },
 
-  // 🍫 Textarea — notes scribbled on a chocolate-bar wrapper
+  // 🍫 Textarea — chocolate wrapper notes
   "🍫": ({ props, bindings }: Ctx) => {
     const [boundValue, setBoundValue] = useBoundProp<string>(
       props.scribble,
@@ -628,10 +864,12 @@ export const skiComponents = {
       <label className="flex flex-col gap-1 text-sm">
         {props.wrapper && (
           <span className="flex items-center gap-2">
-            <span>🍫</span>
+            <span aria-hidden>🍫🍫🍫</span>
             <strong>{props.wrapper}</strong>
+            <span aria-hidden>🍫🍫🍫</span>
           </span>
         )}
+        <EmojiRow glyph="🍫" count={14} />
         <textarea
           id={props.handle ?? undefined}
           name={props.handle ?? undefined}
@@ -639,14 +877,20 @@ export const skiComponents = {
           rows={props.squares ?? 3}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="border rounded-md p-2 bg-transparent outline-none"
+          className="border-2 border-dashed rounded-md p-2 bg-transparent outline-none"
         />
-        {props.nag && <span className="text-xs opacity-70">🌬️ {props.nag}</span>}
+        <EmojiRow glyph="🍫" count={14} />
+        {props.nag && (
+          <span className="text-xs opacity-70">
+            <span aria-hidden>🌬️ </span>
+            {props.nag}
+          </span>
+        )}
       </label>
     );
   },
 
-  // 🚠 Select — cableway dispatcher
+  // 🚠 Select — cableway dispatcher with station glyphs
   "🚠": ({ props, bindings, emit }: Ctx) => {
     const [boundValue, setBoundValue] = useBoundProp<string>(
       props.destination,
@@ -663,8 +907,9 @@ export const skiComponents = {
       <label className="flex flex-col gap-1 text-sm">
         {props.dispatcher && (
           <span className="flex items-center gap-2">
-            <span>🚠</span>
+            <span aria-hidden>🚠🚠🚠</span>
             <strong>{props.dispatcher}</strong>
+            <span aria-hidden>🚠🚠🚠</span>
           </span>
         )}
         <select
@@ -673,11 +918,9 @@ export const skiComponents = {
             setValue(e.target.value);
             emit("dispatch");
           }}
-          className="border rounded-md p-1 bg-transparent outline-none"
+          className="border-2 border-double rounded-md p-1 bg-transparent outline-none"
         >
-          <option value="">
-            🏔️ {props.placeholder ?? "Pick a station…"}
-          </option>
+          <option value="">🏔️ {props.placeholder ?? "Pick a station…"}</option>
           {destinations.map((d, i) => (
             <option key={`${i}-${d}`} value={d || `station-${i}`}>
               🚡 {d}
@@ -707,9 +950,11 @@ export const skiComponents = {
         }}
         className="flex items-center gap-2 cursor-pointer text-left text-sm"
       >
-        <span className="text-xl leading-none">{checked ? "🧥" : "🥶"}</span>
+        <span aria-hidden className="text-2xl leading-none">
+          {checked ? "🧥" : "🥶"}
+        </span>
         <span>{props.layer}</span>
-        <span className="opacity-60">{checked ? "(worn)" : "(off)"}</span>
+        <span aria-hidden>{checked ? "✅" : "❌"}</span>
       </button>
     );
   },
@@ -731,7 +976,7 @@ export const skiComponents = {
       <div className="flex flex-col gap-1 text-sm">
         {props.question && (
           <span className="flex items-center gap-2">
-            <span>🏂</span>
+            <span aria-hidden>🏂🏂🏂</span>
             <strong>{props.question}</strong>
           </span>
         )}
@@ -748,8 +993,11 @@ export const skiComponents = {
                 }}
                 className="flex items-center gap-2 text-left cursor-pointer"
               >
-                <span>{active ? "🏂" : "⚪"}</span>
+                <span aria-hidden className={active ? "animate-drift" : ""}>
+                  {active ? "🏂" : "⚪"}
+                </span>
                 <span>{s}</span>
+                {active && <span aria-hidden>🎿</span>}
               </button>
             );
           })}
@@ -778,15 +1026,21 @@ export const skiComponents = {
         className="flex items-center gap-3 text-sm cursor-pointer"
       >
         <span>{props.hand}</span>
-        <span className="text-2xl leading-none">{checked ? "🧤" : "🖐️"}</span>
+        <span
+          aria-hidden
+          className="text-3xl leading-none animate-drift"
+        >
+          {checked ? "🧤" : "🖐️"}
+        </span>
+        <span aria-hidden>{checked ? "✅" : "❌"}</span>
       </button>
     );
   },
 
-  // ⛸️ Button — emoji-flanked ice-skate push
+  // ⛸️ Button — emoji-walled ice-skate push
   "⛸️": ({ props, emit }: Ctx) => {
-    const wing = pushEmoji[props.push ?? "downhill"] ?? pushEmoji.downhill;
-    const pad = reachPadding[props.reach ?? "regular"] ?? "px-3 py-1.5";
+    const flair = pushFlair[props.push ?? "downhill"] ?? "⬇️";
+    const pad = reachPadding[props.reach ?? "regular"] ?? "px-4 py-2";
     const disabled = !!props.laced;
     const loading = !!props.skating;
     return (
@@ -794,13 +1048,17 @@ export const skiComponents = {
         type="button"
         disabled={disabled || loading}
         onClick={() => emit("push")}
-        className={`inline-flex items-center gap-2 cursor-pointer select-none border rounded-md ${pad} ${
+        className={`inline-flex flex-col items-center gap-1 cursor-pointer select-none border-2 border-double rounded-md ${pad} ${
           disabled ? "opacity-40 cursor-not-allowed" : ""
         }`}
       >
-        <span aria-hidden>{loading ? "🧊" : wing.left}</span>
-        <span>⛸️ {props.cheer}</span>
-        <span aria-hidden>{loading ? "🧊" : wing.right}</span>
+        <span aria-hidden>{loading ? "🧊🧊🧊🧊🧊🧊🧊" : repeat(flair, 7)}</span>
+        <span className="flex items-center gap-1 text-base font-semibold">
+          <span aria-hidden>⛸️⛸️</span>
+          <span>{props.cheer}</span>
+          <span aria-hidden>⛸️⛸️</span>
+        </span>
+        <span aria-hidden>{loading ? "🧊🧊🧊🧊🧊🧊🧊" : repeat(flair, 7)}</span>
       </button>
     );
   },
@@ -818,9 +1076,15 @@ export const skiComponents = {
         props.polished === "fresh" ? "opacity-70" : ""
       }`}
     >
-      <span aria-hidden>🚞</span>
+      <span aria-hidden className="animate-drift">
+        🚞
+      </span>
+      <span aria-hidden>🛤️</span>
       <span>{props.station}</span>
-      <span aria-hidden>➡️</span>
+      <span aria-hidden>🛤️</span>
+      <span aria-hidden className="animate-drift">
+        ➡️
+      </span>
     </a>
   ),
 };
