@@ -9,10 +9,10 @@ import {
 import { schema } from "@json-render/react/schema";
 import { McpServer } from "skybridge/server";
 
-import { alpicComponentDefinitions } from "./catalog.js";
+import { componentDefinitions } from "./active-catalog.js";
 
 const catalog = defineCatalog(schema, {
-  components: alpicComponentDefinitions,
+  components: componentDefinitions,
   actions: {},
 });
 

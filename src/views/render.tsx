@@ -4,17 +4,16 @@ import { defineCatalog, type Spec } from "@json-render/core";
 import { defineRegistry, JSONUIProvider, Renderer } from "@json-render/react";
 import { schema } from "@json-render/react/schema";
 
-import { alpicComponentDefinitions } from "../catalog.js";
-import { alpicComponents } from "../components.js";
+import { componentDefinitions, components } from "../active-catalog.js";
 import { useToolInfo } from "../helpers.js";
 
 const catalog = defineCatalog(schema, {
-  components: alpicComponentDefinitions,
+  components: componentDefinitions,
   actions: {},
 });
 
 const { registry } = defineRegistry(catalog, {
-  components: alpicComponents,
+  components,
 });
 
 function RenderWidget() {
